@@ -2,16 +2,28 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMagnifyingGlass, faSliders, faStar, faLaptop, faPalette, faBriefcase, faMusic, faMasksTheater, faFutbol, faX, faDollarSign } from "@fortawesome/free-solid-svg-icons"
 import { faCalendar } from "@fortawesome/free-regular-svg-icons"
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import axios from "axios";
 import Card from "./Cardto";
 
 function ExplorEvent() {
 
-    const [value, setValue] = useState(500);
     const max = 500;
+    const [searchParams] = useSearchParams();
+
+    // قراءة السعر من الرابط
+    const getPriceFromUrl = () => {
+        const maxPrice = searchParams.get("maxPrice");
+        if (maxPrice === null) return max;
+        const n = Number(maxPrice);
+        return Number.isNaN(n) ? max : Math.min(n, max);
+    };
+
+    // القيم الابتدائية بتجي من الرابط (إذا جاي من صفحة الرئيسية)
+    const [value, setValue] = useState(getPriceFromUrl());
     const percent = (value / max) * 100;
 
-    const [selectedCategory, setSelectedCategory] = useState(null);
+    const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || null);
 
     const categories = [
         { name: "Technology", icon: faLaptop, iconClass: "text-purple-600" },
@@ -22,7 +34,7 @@ function ExplorEvent() {
         { name: "Sport", icon: faFutbol, iconClass: "bg-white rounded-3xl text-black" },
     ];
 
-    const [selectedDate, setSelectedDate] = useState(null);
+    const [selectedDate, setSelectedDate] = useState(searchParams.get("date") || null);
 
     const dates = [
         { name: "Today" },
@@ -33,13 +45,20 @@ function ExplorEvent() {
     const [fourStarsOnly, setFourStarsOnly] = useState(false);
 
     const [cards, setCard] = useState([]);
-    const [search, setSearch] = useState("");
+    const [search, setSearch] = useState(searchParams.get("q") || "");
+
+    // إذا تغيّر الرابط (بحث جديد من صفحة الرئيسية) بنحدّث الفلاتر
+    useEffect(() => {
+        setSearch(searchParams.get("q") || "");
+        setSelectedCategory(searchParams.get("category") || null);
+        setSelectedDate(searchParams.get("date") || null);
+        setValue(getPriceFromUrl());
+    }, [searchParams]);
 
     useEffect(() => {
         axios.get('http://localhost:8000/api/events')
         .then(response => {
             setCard(response.data.Event);
-            console.log(response.data.Event[0]); // مؤقت: لتشوف شكل الداتا، فيك تشيله بعدين
         })
         .catch(error => {
             console.error("حدث خطأ أثناء جلب البيانات:", error);

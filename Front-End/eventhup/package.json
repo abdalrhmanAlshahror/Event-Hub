@@ -17,6 +17,8 @@
     "@fortawesome/react-fontawesome": "^3.3.1",
     "@tailwindcss/vite": "^4.2.4",
     "axios": "^1.19.0",
+    "jspdf": "^4.2.1",
+    "qrcode": "^1.5.4",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-router-dom": "^7.18.2",

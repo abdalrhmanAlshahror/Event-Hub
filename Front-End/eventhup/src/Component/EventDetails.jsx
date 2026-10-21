@@ -14,6 +14,10 @@ function EventDetails() {
     const [isFavorited, setIsFavorited] = useState(false);
     const [favLoading, setFavLoading] = useState(false);
 
+    const [isBooked, setIsBooked] = useState(false);
+    const [bookLoading, setBookLoading] = useState(false);
+    const [bookMessage, setBookMessage] = useState(null);
+
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -29,6 +33,12 @@ function EventDetails() {
         api.get(`/api/events/${id}/favorite/check`)
             .then(res => {
                 setIsFavorited(res.data.favorited);
+            })
+            .catch(err => console.error(err));
+
+        api.get(`/api/events/${id}/book/check`)
+            .then(res => {
+                setIsBooked(res.data.booked);
             })
             .catch(err => console.error(err));
     }, [id]);
@@ -50,6 +60,37 @@ function EventDetails() {
             .finally(() => setFavLoading(false));
     };
 
+    const handleBook = () => {
+        if (bookLoading || isBooked) return;
+        setBookLoading(true);
+        setBookMessage(null);
+
+        api.post(`/api/events/${id}/book`, {})
+            .then(res => {
+                setIsBooked(true);
+                setBookMessage({ type: 'success', text: 'Your ticket has been booked!' });
+                setEvent(prev => ({
+                    ...prev,
+                    remaining_seats: res.data.remaining_seats
+                }));
+            })
+            .catch(err => {
+                console.error(err);
+                if (err.response?.status === 401) {
+                    navigate('/login');
+                    return;
+                }
+                if (err.response?.status === 409) {
+                    setIsBooked(true);
+                }
+                setBookMessage({
+                    type: 'error',
+                    text: err.response?.data?.message || 'Booking failed, please try again'
+                });
+            })
+            .finally(() => setBookLoading(false));
+    };
+
     if (!event) {
         return <p className="text-white pt-10">Loading...</p>;
     }
@@ -61,6 +102,8 @@ function EventDetails() {
     const portimgSrc = event.organizer?.profile_photo?.startsWith('http')
         ? event.organizer.profile_photo
         : `http://localhost:8000/${event.organizer?.profile_photo}`;
+
+    const soldOut = event.remaining_seats <= 0;
 
     return (
         <div>
@@ -126,7 +169,26 @@ function EventDetails() {
                                     <span>{event.remaining_seats} seats remaining</span>
                                 </div>
                             </div>
-                            <button className="w-full py-4 bg-gradient-to-r from-orange-500 to-rose-500 text-white rounded-xl hover:shadow-lg hover:shadow-orange-500/50 transition-all mb-4">Book Ticket</button>
+                            <button
+                                onClick={handleBook}
+                                disabled={bookLoading || isBooked || soldOut}
+                                className={`w-full py-4 text-white rounded-xl transition-all mb-4 ${
+                                    isBooked
+                                        ? 'bg-emerald-600/80 cursor-default'
+                                        : soldOut
+                                            ? 'bg-gray-600 cursor-not-allowed'
+                                            : 'bg-gradient-to-r from-orange-500 to-rose-500 hover:shadow-lg hover:shadow-orange-500/50 cursor-pointer'
+                                }`}
+                            >
+                                {bookLoading ? 'Booking...' : isBooked ? 'Booked ✓' : soldOut ? 'Sold Out' : 'Book Ticket'}
+                            </button>
+
+                            {bookMessage && (
+                                <p className={`text-sm mb-4 ${bookMessage.type === 'success' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                    {bookMessage.text}
+                                </p>
+                            )}
+
                             <div className="grid grid-cols-2 gap-3">
                                 <button className="flex items-center justify-center gap-2 py-3 bg-white/5 text-gray-300 rounded-xl hover:bg-white/10 transition-colors">
                                     <FontAwesomeIcon icon={faShareNodes} className="lucide lucide-share2 lucide-share-2" /> Share

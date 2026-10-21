@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -17,13 +18,24 @@ class AuthController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'role' => ['required', 'in:admin,organizer,attendee'],
+            'profile_photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,gif', 'max:2048'],
         ]);
+
+        $photoPath = null;
+
+        if ($request->hasFile('profile_photo')) {
+            $file = $request->file('profile_photo');
+            $filename = time() . '_' . Str::uuid() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('profiles'), $filename);
+            $photoPath = 'profiles/' . $filename;
+        }
 
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
             'role' => $data['role'],
+            'profile_photo' => $photoPath,
         ]);
 
         Auth::login($user);

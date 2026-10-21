@@ -4,20 +4,27 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
 
 class Bookings extends Model
 {
+    protected $fillable = [
+        'user_id',
+        'event_id',
+        'booking_date',
+    ];
 
-    use HasFactory;
+    protected $casts = [
+        'booking_date' => 'datetime',
+    ];
 
-    protected $fillable = ['id', 'user_id', 'event_id', 'booking_date'];
-
-    public function users() {
-        return $this->belongsTo(User::class, 'user_id');
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 
-    public function event() {
-        return $this->belongsTo(Event::class, 'event_id');
+    public function event()
+    {
+        return $this->belongsTo(Event::class);
     }
 }
